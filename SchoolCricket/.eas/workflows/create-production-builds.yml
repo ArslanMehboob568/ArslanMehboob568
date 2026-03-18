@@ -1,14 +1,11 @@
-name: Create production builds
-
-on:
-  push:
-    branches:
-      - main
+name: Create Production Builds
 
 jobs:
-  build:
-    name: Create production builds
-    type: build
+  build_android:
+    type: build # This job type creates a production build for Android
     params:
-      platform: all
-      profile: production
+      platform: android
+  build_ios:
+    type: build # This job type creates a production build for iOS
+    params:
+      platform: ios
