@@ -1,0 +1,14 @@
+name: Create production builds
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Create production builds
+    type: build
+    params:
+      platform: all
+      profile: production
