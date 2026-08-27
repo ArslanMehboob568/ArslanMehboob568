@@ -11,8 +11,12 @@
 {%- liquid
   assign s = section.settings
   assign sec_id = section.id
-  assign visible_blocks = section.blocks | where: 'settings.show', true
-  assign total_visible = visible_blocks.size
+  assign total_visible = 0
+  for block in section.blocks
+    if block.settings.show
+      assign total_visible = total_visible | plus: 1
+    endif
+  endfor
   assign initial = s.initial_visible | at_most: total_visible
 -%}
 
@@ -203,13 +207,14 @@
   </div>
 
   <div class="crx-grid" data-crx-grid>
+    {%- assign visible_idx = -1 -%}
     {%- for block in section.blocks -%}
       {%- assign bs = block.settings -%}
       {%- if bs.show -%}
-        {%- assign idx = forloop.index0 -%}
+        {%- assign visible_idx = visible_idx | plus: 1 -%}
         <div
           class="crx-card"
-          {% if idx >= initial %}hidden{% endif %}
+          {% if visible_idx >= initial %}hidden{% endif %}
           data-crx-card
           {{ block.shopify_attributes }}
         >
