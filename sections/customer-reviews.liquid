@@ -1,0 +1,412 @@
+{%- comment -%}
+  Customer Reviews Showcase
+  Self-contained Online Store 2.0 section. No external requests, no theme
+  dependencies. Every review is a block so merchants can add/remove/reorder
+  reviews, switch each one on or off, and optionally attach a photo — all
+  from the theme editor. Styling is driven entirely by section settings and
+  scoped to this section's unique id so it cannot leak into (or be broken
+  by) the rest of the theme.
+{%- endcomment -%}
+
+{%- liquid
+  assign s = section.settings
+  assign sec_id = section.id
+  assign visible_blocks = section.blocks | where: 'settings.show', true
+  assign total_visible = visible_blocks.size
+  assign initial = s.initial_visible | at_most: total_visible
+-%}
+
+{%- if s.enable_section -%}
+<section
+  id="crx-{{ sec_id }}"
+  class="crx-reviews crx-width-{{ s.container_width }}"
+  data-initial="{{ initial }}"
+  data-crx-section
+>
+  <style>
+    #crx-{{ sec_id }} {
+      --crx-bg: {{ s.section_bg_color }};
+      --crx-card-bg: {{ s.card_bg_color }};
+      --crx-card-border: {{ s.card_border_color }};
+      --crx-radius: {{ s.card_radius }}px;
+      --crx-heading-color: {{ s.heading_color }};
+      --crx-text-color: {{ s.text_color }};
+      --crx-meta-color: {{ s.meta_color }};
+      --crx-star-color: {{ s.star_color }};
+      --crx-star-empty: {{ s.star_empty_color }};
+      --crx-badge-color: {{ s.verified_badge_color }};
+      --crx-accent: {{ s.accent_color }};
+      --crx-accent-text: {{ s.accent_text_color }};
+      --crx-heading-size: {{ s.heading_font_size }}px;
+      --crx-body-size: {{ s.body_font_size }}px;
+      --crx-name-size: {{ s.name_font_size }}px;
+      --crx-gap: {{ s.grid_gap }}px;
+      --crx-pad-top: {{ s.padding_top }}px;
+      --crx-pad-bottom: {{ s.padding_bottom }}px;
+      --crx-cols-desktop: {{ s.columns_desktop }};
+      --crx-cols-tablet: {{ s.columns_tablet }};
+      --crx-font: {% if s.use_theme_font %}inherit{% else %}{{ s.font_stack }}{% endif %};
+    }
+
+    #crx-{{ sec_id }}.crx-reviews {
+      background: var(--crx-bg);
+      padding: var(--crx-pad-top) 16px var(--crx-pad-bottom);
+      font-family: var(--crx-font);
+      box-sizing: border-box;
+    }
+    #crx-{{ sec_id }} *,
+    #crx-{{ sec_id }} *::before,
+    #crx-{{ sec_id }} *::after { box-sizing: inherit; }
+
+    #crx-{{ sec_id }}.crx-width-standard { max-width: 1200px; margin: 0 auto; }
+    #crx-{{ sec_id }}.crx-width-wide { max-width: 1440px; margin: 0 auto; }
+    #crx-{{ sec_id }}.crx-width-full { max-width: none; }
+
+    #crx-{{ sec_id }} .crx-head {
+      text-align: center;
+      margin: 0 0 28px;
+    }
+    #crx-{{ sec_id }} .crx-heading {
+      color: var(--crx-heading-color);
+      font-size: var(--crx-heading-size);
+      line-height: 1.25;
+      margin: 0 0 10px;
+      font-weight: 700;
+    }
+    #crx-{{ sec_id }} .crx-subheading {
+      color: var(--crx-text-color);
+      font-size: var(--crx-body-size);
+      margin: 0 0 14px;
+    }
+    #crx-{{ sec_id }} .crx-summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #crx-{{ sec_id }} .crx-summary-stars { color: var(--crx-star-color); font-size: 20px; letter-spacing: 2px; }
+    #crx-{{ sec_id }} .crx-summary-count { color: var(--crx-meta-color); font-size: 14px; }
+
+    #crx-{{ sec_id }} .crx-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--crx-cols-desktop), 1fr);
+      gap: var(--crx-gap);
+      grid-auto-flow: dense;
+    }
+    @media (max-width: 989px) {
+      #crx-{{ sec_id }} .crx-grid { grid-template-columns: repeat(var(--crx-cols-tablet), 1fr); }
+    }
+    @media (max-width: 599px) {
+      #crx-{{ sec_id }} .crx-grid { grid-template-columns: 1fr; }
+    }
+
+    #crx-{{ sec_id }} .crx-card {
+      background: var(--crx-card-bg);
+      border: 1px solid var(--crx-card-border);
+      border-radius: var(--crx-radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      {% if s.card_shadow %}box-shadow: 0 2px 10px rgba(0,0,0,0.06);{% endif %}
+    }
+    #crx-{{ sec_id }} .crx-card[hidden] { display: none; }
+
+    #crx-{{ sec_id }} .crx-card-img {
+      width: 100%;
+      border-radius: calc(var(--crx-radius) - 4px);
+      overflow: hidden;
+      background: var(--crx-card-border);
+      aspect-ratio: 4 / 3;
+    }
+    #crx-{{ sec_id }} .crx-card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    #crx-{{ sec_id }} .crx-stars {
+      color: var(--crx-star-color);
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+    #crx-{{ sec_id }} .crx-stars .crx-star-empty { color: var(--crx-star-empty); }
+
+    #crx-{{ sec_id }} .crx-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    #crx-{{ sec_id }} .crx-name {
+      font-size: var(--crx-name-size);
+      font-weight: 600;
+      color: var(--crx-heading-color);
+    }
+    #crx-{{ sec_id }} .crx-verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      color: var(--crx-badge-color);
+      font-weight: 500;
+    }
+    #crx-{{ sec_id }} .crx-verified svg { width: 12px; height: 12px; fill: currentColor; }
+
+    #crx-{{ sec_id }} .crx-text {
+      color: var(--crx-text-color);
+      font-size: var(--crx-body-size);
+      line-height: 1.5;
+      margin: 0;
+    }
+    #crx-{{ sec_id }} .crx-date {
+      color: var(--crx-meta-color);
+      font-size: 12px;
+    }
+
+    #crx-{{ sec_id }} .crx-more-wrap {
+      text-align: center;
+      margin-top: 28px;
+    }
+    #crx-{{ sec_id }} .crx-btn {
+      appearance: none;
+      border: 1px solid var(--crx-accent);
+      background: var(--crx-accent);
+      color: var(--crx-accent-text);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 28px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity .15s ease;
+    }
+    #crx-{{ sec_id }} .crx-btn:hover { opacity: .85; }
+    #crx-{{ sec_id }} .crx-btn[hidden] { display: none; }
+  </style>
+
+  <div class="crx-head">
+    {%- if s.heading != blank -%}
+      <h2 class="crx-heading">{{ s.heading }}</h2>
+    {%- endif -%}
+    {%- if s.subheading != blank -%}
+      <p class="crx-subheading">{{ s.subheading }}</p>
+    {%- endif -%}
+    {%- if s.show_rating_summary -%}
+      <div class="crx-summary">
+        <span class="crx-summary-stars" aria-hidden="true">★★★★★</span>
+        <span class="crx-summary-count">{{ s.total_reviews_label }}</span>
+      </div>
+    {%- endif -%}
+  </div>
+
+  <div class="crx-grid" data-crx-grid>
+    {%- for block in section.blocks -%}
+      {%- assign bs = block.settings -%}
+      {%- if bs.show -%}
+        {%- assign idx = forloop.index0 -%}
+        <div
+          class="crx-card"
+          {% if idx >= initial %}hidden{% endif %}
+          data-crx-card
+          {{ block.shopify_attributes }}
+        >
+          {%- if bs.image != blank -%}
+            <div class="crx-card-img">
+              <img
+                src="{{ bs.image | image_url: width: 600 }}"
+                srcset="{{ bs.image | image_url: width: 400 }} 400w, {{ bs.image | image_url: width: 600 }} 600w, {{ bs.image | image_url: width: 800 }} 800w"
+                sizes="(max-width: 599px) 92vw, 300px"
+                alt="{{ bs.image.alt | default: bs.name | escape }}"
+                loading="lazy"
+                decoding="async"
+                width="{{ bs.image.width }}"
+                height="{{ bs.image.height }}"
+              >
+            </div>
+          {%- endif -%}
+
+          <div class="crx-stars" aria-label="{{ bs.rating }} out of 5 stars">
+            {%- for i in (1..5) -%}
+              {%- if i <= bs.rating -%}★{%- else -%}<span class="crx-star-empty">★</span>{%- endif -%}
+            {%- endfor -%}
+          </div>
+
+          <div class="crx-name-row">
+            <span class="crx-name">{{ bs.name }}</span>
+            {%- if bs.verified -%}
+              <span class="crx-verified">
+                <svg viewBox="0 0 20 20"><path d="M10 0l2.39 1.9 3.02-.53 1 2.9 2.7 1.46-.68 3.02.68 3.02-2.7 1.46-1 2.9-3.02-.53L10 18l-2.39-1.9-3.02.53-1-2.9-2.7-1.46.68-3.02L.89 6.2l2.7-1.46 1-2.9 3.02.53L10 0zm-1.2 12.6l5.1-5.1-1.2-1.2-3.9 3.9-1.7-1.7-1.2 1.2 2.9 2.9z"/></svg>
+                {{ s.verified_label }}
+              </span>
+            {%- endif -%}
+          </div>
+
+          <p class="crx-text">{{ bs.text }}</p>
+
+          {%- if bs.date != blank -%}
+            <span class="crx-date">{{ bs.date }}</span>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+
+  {%- if total_visible > initial -%}
+    <div class="crx-more-wrap">
+      <button type="button" class="crx-btn" data-crx-more>{{ s.load_more_text }}</button>
+      {%- if s.enable_show_less -%}
+        <button type="button" class="crx-btn" data-crx-less hidden>{{ s.show_less_text }}</button>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+</section>
+
+<script>
+  (function () {
+    var root = document.getElementById('crx-{{ sec_id }}');
+    if (!root) return;
+
+    var grid = root.querySelector('[data-crx-grid]');
+    var moreBtn = root.querySelector('[data-crx-more]');
+    var lessBtn = root.querySelector('[data-crx-less]');
+    var initial = parseInt(root.getAttribute('data-initial'), 10) || 0;
+
+    if (!grid || !moreBtn) return;
+
+    function cards() {
+      return Array.prototype.slice.call(grid.querySelectorAll('[data-crx-card]'));
+    }
+
+    moreBtn.addEventListener('click', function () {
+      cards().forEach(function (card) { card.hidden = false; });
+      moreBtn.hidden = true;
+      if (lessBtn) lessBtn.hidden = false;
+    });
+
+    if (lessBtn) {
+      lessBtn.addEventListener('click', function () {
+        cards().forEach(function (card, i) { card.hidden = i >= initial; });
+        lessBtn.hidden = true;
+        moreBtn.hidden = false;
+        root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  })();
+</script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Customer Reviews",
+  "tag": "section",
+  "class": "crx-reviews-section",
+  "settings": [
+    { "type": "checkbox", "id": "enable_section", "label": "Enable section", "default": true },
+    { "type": "header", "content": "Content" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "The Opinion of Our +3000 Satisfied Clients" },
+    { "type": "text", "id": "subheading", "label": "Subheading" },
+    { "type": "checkbox", "id": "show_rating_summary", "label": "Show rating summary", "default": true },
+    { "type": "text", "id": "total_reviews_label", "label": "Reviews label", "default": "3,429 Reviews" },
+    { "type": "text", "id": "verified_label", "label": "Verified badge text", "default": "Verified" },
+    { "type": "range", "id": "initial_visible", "min": 2, "max": 25, "step": 1, "label": "Reviews shown before \"Load more\"", "default": 10 },
+    { "type": "text", "id": "load_more_text", "label": "\"Load more\" button text", "default": "View more reviews" },
+    { "type": "checkbox", "id": "enable_show_less", "label": "Show a \"Show less\" button after expanding", "default": true },
+    { "type": "text", "id": "show_less_text", "label": "\"Show less\" button text", "default": "Show less" },
+
+    { "type": "header", "content": "Layout" },
+    { "type": "select", "id": "container_width", "label": "Section width", "default": "standard",
+      "options": [
+        { "value": "standard", "label": "Standard" },
+        { "value": "wide", "label": "Wide" },
+        { "value": "full", "label": "Full width" }
+      ]
+    },
+    { "type": "range", "id": "columns_desktop", "min": 2, "max": 5, "step": 1, "label": "Columns (desktop)", "default": 4 },
+    { "type": "range", "id": "columns_tablet", "min": 1, "max": 3, "step": 1, "label": "Columns (tablet)", "default": 2 },
+    { "type": "range", "id": "grid_gap", "min": 8, "max": 40, "step": 2, "unit": "px", "label": "Gap between cards", "default": 16 },
+    { "type": "range", "id": "card_radius", "min": 0, "max": 30, "step": 1, "unit": "px", "label": "Card corner radius", "default": 12 },
+    { "type": "checkbox", "id": "card_shadow", "label": "Card shadow", "default": true },
+    { "type": "range", "id": "padding_top", "min": 0, "max": 120, "step": 4, "unit": "px", "label": "Top padding", "default": 48 },
+    { "type": "range", "id": "padding_bottom", "min": 0, "max": 120, "step": 4, "unit": "px", "label": "Bottom padding", "default": 48 },
+
+    { "type": "header", "content": "Fonts" },
+    { "type": "checkbox", "id": "use_theme_font", "label": "Use theme's default font", "default": true },
+    { "type": "select", "id": "font_stack", "label": "Custom font (used when theme font is off)", "default": "system",
+      "options": [
+        { "value": "system", "label": "System UI (fastest)" },
+        { "value": "Georgia, 'Times New Roman', serif", "label": "Serif" },
+        { "value": "'Helvetica Neue', Arial, sans-serif", "label": "Sans-serif" },
+        { "value": "'Courier New', monospace", "label": "Monospace" }
+      ]
+    },
+    { "type": "range", "id": "heading_font_size", "min": 18, "max": 56, "step": 1, "unit": "px", "label": "Heading size", "default": 32 },
+    { "type": "range", "id": "name_font_size", "min": 12, "max": 22, "step": 1, "unit": "px", "label": "Reviewer name size", "default": 15 },
+    { "type": "range", "id": "body_font_size", "min": 12, "max": 20, "step": 1, "unit": "px", "label": "Review text size", "default": 14 },
+
+    { "type": "header", "content": "Colors" },
+    { "type": "color", "id": "section_bg_color", "label": "Section background", "default": "#ffffff" },
+    { "type": "color", "id": "card_bg_color", "label": "Card background", "default": "#ffffff" },
+    { "type": "color", "id": "card_border_color", "label": "Card border", "default": "#e5e5e5" },
+    { "type": "color", "id": "heading_color", "label": "Heading / name color", "default": "#1a1a1a" },
+    { "type": "color", "id": "text_color", "label": "Body text color", "default": "#4a4a4a" },
+    { "type": "color", "id": "meta_color", "label": "Meta text color (date, count)", "default": "#8a8a8a" },
+    { "type": "color", "id": "star_color", "label": "Star color", "default": "#f5a623" },
+    { "type": "color", "id": "star_empty_color", "label": "Empty star color", "default": "#d9d9d9" },
+    { "type": "color", "id": "verified_badge_color", "label": "Verified badge color", "default": "#1a9d5c" },
+    { "type": "color", "id": "accent_color", "label": "Button background", "default": "#1a1a1a" },
+    { "type": "color", "id": "accent_text_color", "label": "Button text", "default": "#ffffff" }
+  ],
+  "blocks": [
+    {
+      "type": "review",
+      "name": "Review",
+      "settings": [
+        { "type": "checkbox", "id": "show", "label": "Show this review", "default": true },
+        { "type": "text", "id": "name", "label": "Reviewer name", "default": "Jane D." },
+        { "type": "checkbox", "id": "verified", "label": "Verified buyer", "default": true },
+        { "type": "range", "id": "rating", "min": 1, "max": 5, "step": 1, "label": "Rating", "default": 5 },
+        { "type": "textarea", "id": "text", "label": "Review text", "default": "This product exceeded my expectations." },
+        { "type": "text", "id": "date", "label": "Date (optional)" },
+        { "type": "image_picker", "id": "image", "label": "Photo (optional)" }
+      ]
+    }
+  ],
+  "max_blocks": 25,
+  "presets": [
+    {
+      "name": "Customer Reviews",
+      "settings": {},
+      "blocks": [
+        { "type": "review", "settings": { "name": "Natalie F.", "verified": true, "rating": 5, "text": "I didn't expect something so simple to make reading better. It really does make a difference at night." } },
+        { "type": "review", "settings": { "name": "Olivia H.", "verified": true, "rating": 5, "text": "I've tried similar products from Amazon and returned them. This one is on another level in terms of comfort and build quality." } },
+        { "type": "review", "settings": { "name": "Ryan C.", "verified": true, "rating": 5, "text": "Perfect for late night reading. The light is focused exactly where you need it and doesn't light up the whole room." } },
+        { "type": "review", "settings": { "name": "Ashley M.", "verified": true, "rating": 5, "text": "I was worried it would feel flimsy, but it's surprisingly sturdy. Doesn't feel cheap at all." } },
+        { "type": "review", "settings": { "name": "Megan T.", "verified": true, "rating": 5, "text": "I have sensitive eyes and bright lights give me headaches. This is the first light that actually feels comfortable to use at night." } },
+        { "type": "review", "settings": { "name": "Daniel F.", "verified": true, "rating": 5, "text": "I wasn't sure I'd use it much, but now I literally grab it every night. It's become part of my bedtime routine." } },
+        { "type": "review", "settings": { "name": "Jason R.", "verified": true, "rating": 4, "text": "I thought this was overpriced at first. After a year of use I get it, the quality is there and it feels like it'll last a long time." } },
+        { "type": "review", "settings": { "name": "Lauren B.", "verified": true, "rating": 5, "text": "The packaging was great and the product feels premium." } },
+        { "type": "review", "settings": { "name": "Chloe R.", "verified": true, "rating": 5, "text": "It doesn't bother my husband at all while he sleeps. Exactly what I needed. Battery lasts way longer than expected. Great quality!" } },
+        { "type": "review", "settings": { "name": "Michael A.", "verified": true, "rating": 5, "text": "I can finally read without using my phone flashlight. Game changer." } },
+        { "type": "review", "settings": { "name": "Emily C.", "verified": true, "rating": 5, "text": "I read in bed every night and didn't realize how annoying my old lamp was until this. It's gentle, cozy, and doesn't disturb my partner at all." } },
+        { "type": "review", "settings": { "name": "Sarah M.", "verified": true, "rating": 4, "text": "I was honestly skeptical at first because I've bought cheap lights before. This one held up, it's soft on my eyes, and it lasts way longer than expected." } },
+        { "type": "review", "settings": { "name": "Sophia M.", "verified": true, "rating": 5, "text": "Super lightweight and the warm mode is so relaxing before bed. Totally worth it." } },
+        { "type": "review", "settings": { "name": "Emily G.", "verified": true, "rating": 5, "text": "The light is perfect for reading in bed without waking my partner." } },
+        { "type": "review", "settings": { "name": "Daniel B.", "verified": true, "rating": 4, "text": "Wasn't sure at first, but this is amazing. The whole page lights up evenly." } },
+        { "type": "review", "settings": { "name": "Grace L.", "verified": true, "rating": 5, "text": "Charges fast and lasts for days. I use it every single night." } },
+        { "type": "review", "settings": { "name": "Tyler K.", "verified": true, "rating": 5, "text": "Great gift for my mom who reads constantly. She loves it." } },
+        { "type": "review", "settings": { "name": "Hannah W.", "verified": true, "rating": 5, "text": "The clip is strong enough to hold on thicker hardcovers without slipping." } },
+        { "type": "review", "settings": { "name": "Brandon S.", "verified": true, "rating": 4, "text": "Does exactly what it says. Simple, effective, no complaints." } },
+        { "type": "review", "settings": { "name": "Isabella P.", "verified": true, "rating": 5, "text": "I travel a lot and this fits perfectly in my bag. Lightweight and practical." } },
+        { "type": "review", "settings": { "name": "Nathan G.", "verified": true, "rating": 5, "text": "The three brightness settings make a huge difference depending on the room." } },
+        { "type": "review", "settings": { "name": "Olivia S.", "verified": true, "rating": 5, "text": "Feels way more expensive than it actually is. Really impressed with the build quality." } },
+        { "type": "review", "settings": { "name": "Mason T.", "verified": true, "rating": 4, "text": "Good product overall, took a star off only because I wish it came in more colors." } },
+        { "type": "review", "settings": { "name": "Ava R.", "verified": true, "rating": 5, "text": "My kids use it for reading before bed now instead of the overhead light. Works great." } },
+        { "type": "review", "settings": { "name": "Ethan J.", "verified": true, "rating": 5, "text": "Been using it for six months and it still works like day one." } }
+      ]
+    }
+  ]
+}
+{% endschema %}
